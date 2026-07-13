@@ -24,7 +24,8 @@
     --radius: 18px;
     --shadow: 0 1px 2px rgba(22,22,22,0.04), 0 8px 24px rgba(22,22,22,0.05);
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* touch-action: manipulation でダブルタップズームを無効化（＋ボタン連打対策。ピンチズームは残る） */
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   html { font-size: 16px; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
@@ -153,7 +154,7 @@
   .stepper button:active { transform: scale(0.9); background: var(--bg); }
   .stepper input {
     width: 58px; height: 40px; text-align: center;
-    font-size: 1.02rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
     border: none; border-radius: 10px; background: var(--bg); color: var(--ink);
     font-family: inherit;
   }
@@ -246,7 +247,7 @@
   .rule-row .cat-name { font-size: 0.88rem; }
   .rule-row select {
     border: 1px solid var(--line); border-radius: 10px; height: 40px; padding: 0 10px;
-    font-size: 0.84rem; background: var(--card); color: var(--ink); font-family: inherit;
+    font-size: 16px; background: var(--card); color: var(--ink); font-family: inherit;
     -webkit-appearance: none; appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b8880' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 10px center;
@@ -255,7 +256,7 @@
   .cat-add { display: flex; gap: 8px; margin-top: 16px; }
   .cat-add input {
     flex: 1; min-width: 0; height: 42px; border: 1px solid var(--line); border-radius: 10px;
-    padding: 0 12px; font-size: 0.84rem; background: var(--card); color: var(--ink); font-family: inherit;
+    padding: 0 12px; font-size: 16px; background: var(--card); color: var(--ink); font-family: inherit;
   }
   .cat-add input::placeholder { color: var(--faint); }
   .cat-add input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
@@ -339,7 +340,7 @@
   .focus-line small { display: block; font-size: 0.64rem; font-weight: 400; color: var(--sub); letter-spacing: 0.08em; }
   .focus-input {
     width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 10px;
-    padding: 0 12px; font-size: 0.84rem; background: var(--card); color: var(--ink); font-family: inherit;
+    padding: 0 12px; font-size: 16px; background: var(--card); color: var(--ink); font-family: inherit;
   }
   .focus-input::placeholder { color: var(--faint); }
   .focus-input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
