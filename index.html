@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>168 — 時間記録</title>
+<meta name="description" content="1週間は168時間。あなたの時間の使い方を1日1分で記録するアプリ。データは端末内にのみ保存されます。">
+<meta name="theme-color" content="#161616">
+<!-- ホーム画面追加用（iOS） -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="168">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23161616'/%3E%3Ctext x='32' y='42' font-family='Helvetica,Arial' font-size='24' font-weight='bold' fill='%23fff' text-anchor='middle'%3E168%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23161616'/%3E%3Ctext x='32' y='42' font-family='Helvetica,Arial' font-size='24' font-weight='bold' fill='%23fff' text-anchor='middle'%3E168%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f3f0;
+    --card: #ffffff;
+    --ink: #161616;
+    --sub: #8b8880;
+    --faint: #b9b6af;
+    --line: #e8e6e1;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgba(22,22,22,0.04), 0 8px 24px rgba(22,22,22,0.05);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "palt";
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ===== ヘッダー ===== */
+  header {
+    padding: 26px 24px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--ink); color: #fff;
+    width: 52px; height: 52px; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em;
+  }
+  .launch-brand {
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none; color: var(--ink);
+  }
+  .launch-brand:active { opacity: 0.6; }
+  .lb-mark { width: 30px; height: 40px; }
+  .lb-text {
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: 800; font-size: 1.05rem; letter-spacing: 0.16em;
+  }
+
+  main { padding: 10px 18px 28px; }
+  .view { display: none; }
+  .view.active { display: block; animation: rise 0.28s ease both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ===== カード・見出し ===== */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.72rem; font-weight: 600; color: var(--sub);
+    letter-spacing: 0.22em;
+    margin-bottom: 18px;
+  }
+  .card h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* ===== 日付ナビ ===== */
+  .datenav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 8px 2px 16px;
+  }
+  .datenav button {
+    background: var(--card); border: 1px solid var(--line); border-radius: 50%;
+    width: 42px; height: 42px; color: var(--ink); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow);
+    transition: transform 0.12s ease;
+  }
+  .datenav button:active { transform: scale(0.92); }
+  .datenav button:disabled { opacity: 0.25; box-shadow: none; }
+  .datenav button svg { width: 16px; height: 16px; }
+  .datenav .datelabel { text-align: center; line-height: 1.4; }
+  .datenav .datelabel .d-main { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.06em; }
+  .datenav .datelabel .d-sub {
+    display: block; font-size: 0.66rem; color: var(--sub); letter-spacing: 0.28em;
+  }
+
+  /* ===== 超過アラート ===== */
+  .alert {
+    background: var(--ink); color: #f4f3f0;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    font-size: 0.84rem;
+    line-height: 1.8;
+    display: none;
+    box-shadow: var(--shadow);
+  }
+  .alert.show { display: block; animation: rise 0.28s ease both; }
+  .alert .alert-title {
+    font-size: 0.68rem; letter-spacing: 0.22em; color: rgba(244,243,240,0.6);
+    margin-bottom: 4px;
+  }
+  .alert strong { font-weight: 700; color: #fff; }
+
+  /* ===== 入力行 ===== */
+  .cat-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cat-row:first-child { padding-top: 2px; }
+  .cat-row:last-child { border-bottom: none; padding-bottom: 4px; }
+  .cat-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(22,22,22,0.12); }
+  .cat-name { flex: 1; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.02em; }
+  .cat-name small {
+    display: block; font-size: 0.6rem; font-weight: 400; color: var(--faint);
+    line-height: 1.6; letter-spacing: 0.02em; margin-top: 1px;
+  }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .stepper button {
+    width: 40px; height: 40px; border: 1px solid var(--line); background: var(--card);
+    border-radius: 50%; color: var(--ink); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; font-weight: 300; line-height: 1;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .stepper button:active { transform: scale(0.9); background: var(--bg); }
+  .stepper input {
+    width: 58px; height: 40px; text-align: center;
+    font-size: 1.02rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    border: none; border-radius: 10px; background: var(--bg); color: var(--ink);
+    font-family: inherit;
+  }
+  .stepper input:focus { outline: 2px solid var(--ink); outline-offset: -1px; background: var(--card); }
+
+  /* 合計バー */
+  .sum-wrap { margin-top: 20px; }
+  .sum-bar { display: flex; justify-content: space-between; align-items: flex-end; }
+  .sum-bar .sum-label { font-size: 0.72rem; color: var(--sub); letter-spacing: 0.14em; }
+  .sum-bar .sum-num { font-weight: 700; font-size: 1.5rem; letter-spacing: 0.02em; }
+  .sum-bar .sum-unit { font-size: 0.72rem; color: var(--sub); font-weight: 500; }
+  .sum-bar .over { text-decoration: underline; }
+  .sum-track {
+    height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 10px;
+  }
+  .sum-fill { height: 100%; width: 0%; background: var(--ink); border-radius: 99px; transition: width 0.3s ease; }
+  .fill-btn {
+    border: none; background: var(--ink); color: #fff;
+    border-radius: 99px; padding: 10px 18px; font-size: 0.78rem; letter-spacing: 0.08em;
+    cursor: pointer; font-family: inherit;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  .fill-btn:active { transform: scale(0.96); }
+  .fill-btn:disabled { background: var(--line); color: var(--faint); }
+  .saved-note { text-align: center; font-size: 0.68rem; color: var(--faint); margin-top: 16px; letter-spacing: 0.1em; }
+
+  /* ===== グラフ ===== */
+  .donut-wrap { display: flex; justify-content: center; padding: 8px 0 6px; }
+  .legend { margin-top: 14px; }
+  .legend-row { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .legend-row:last-of-type { border-bottom: none; }
+  .legend-row .lg-name { flex: 1; font-weight: 500; }
+  .legend-row .lg-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .legend-row .lg-pct { color: var(--faint); width: 48px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.76rem; }
+  .flag-note { font-size: 0.68rem; color: var(--sub); margin-top: 12px; letter-spacing: 0.06em; }
+  .empty-note { text-align: center; color: var(--sub); font-size: 0.84rem; padding: 34px 0; line-height: 2.1; }
+
+  /* ===== 週ビュー ===== */
+  .free-hours { text-align: center; padding: 10px 0 8px; }
+  .free-hours .fh-label { font-size: 0.68rem; color: var(--sub); letter-spacing: 0.26em; margin-bottom: 2px; }
+  .free-hours .big {
+    font-size: 4rem; font-weight: 200; letter-spacing: -0.02em; line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .free-hours .big small { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.1em; color: var(--sub); margin-left: 4px; }
+  .free-hours p { font-size: 0.76rem; color: var(--sub); margin-top: 8px; line-height: 2; }
+  .weekbars { display: flex; gap: 8px; align-items: flex-end; height: 128px; margin-top: 10px; }
+  .weekbar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .weekbar .bar-stack {
+    display: flex; flex-direction: column-reverse; width: 100%;
+    border-radius: 5px; overflow: hidden;
+  }
+  .weekbar .seg { width: 100%; }
+  .weekbar-track { border-bottom: 1px solid var(--line); }
+  .weekbar-labels { display: flex; gap: 8px; margin-top: 8px; }
+  .weekbar-label { flex: 1; text-align: center; font-size: 0.66rem; color: var(--faint); letter-spacing: 0.1em; }
+  .weekbar-label.today { color: var(--ink); font-weight: 700; }
+  .weekbar-label.today::after { content: ""; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--ink); margin: 3px auto 0; }
+  .week-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 4px; }
+  .week-table td { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .week-table tr:last-child td { border-bottom: none; }
+  .week-table .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .report-title { font-size: 1.02rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .report-range { font-size: 0.7rem; color: var(--sub); letter-spacing: 0.08em; margin-bottom: 10px; }
+  .report-msg { font-size: 0.86rem; margin-top: 14px; padding: 14px 16px; background: var(--bg); border-radius: 12px; line-height: 2; }
+  .report-lock { text-align: center; color: var(--sub); font-size: 0.8rem; padding: 18px 0 6px; line-height: 2.1; }
+  .cta-wrap { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .cta-title { font-size: 0.72rem; font-weight: 600; color: var(--sub); letter-spacing: 0.22em; margin-bottom: 10px; }
+  .cta-box {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; margin: 0;
+    font-family: inherit; font-size: 0.84rem; line-height: 2;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .copy-btn {
+    width: 100%; margin-top: 10px;
+    border: none; background: var(--ink); color: #fff; border-radius: 99px;
+    padding: 12px; font-size: 0.8rem; letter-spacing: 0.1em; cursor: pointer; font-family: inherit;
+    transition: transform 0.12s ease;
+  }
+  .copy-btn:active { transform: scale(0.98); }
+  .progress-dots { display: flex; gap: 8px; justify-content: center; margin: 10px 0 8px; }
+  .progress-dots span { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--faint); }
+  .progress-dots span.done { background: var(--ink); border-color: var(--ink); }
+
+  /* ===== ルール ===== */
+  .rule-desc { font-size: 0.78rem; color: var(--sub); margin-bottom: 14px; line-height: 2; }
+  .rule-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .rule-row:last-child { border-bottom: none; }
+  .rule-row .cat-name { font-size: 0.88rem; }
+  .rule-row select {
+    border: 1px solid var(--line); border-radius: 10px; height: 40px; padding: 0 10px;
+    font-size: 0.84rem; background: var(--card); color: var(--ink); font-family: inherit;
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b8880' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 28px;
+  }
+  .cat-add { display: flex; gap: 8px; margin-top: 16px; }
+  .cat-add input {
+    flex: 1; min-width: 0; height: 42px; border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 12px; font-size: 0.84rem; background: var(--card); color: var(--ink); font-family: inherit;
+  }
+  .cat-add input::placeholder { color: var(--faint); }
+  .cat-add input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
+  .cat-add button {
+    border: none; background: var(--ink); color: #fff; border-radius: 10px;
+    padding: 0 20px; font-size: 0.8rem; letter-spacing: 0.1em; cursor: pointer; font-family: inherit;
+    transition: transform 0.12s ease;
+  }
+  .cat-add button:active { transform: scale(0.96); }
+  .cat-del {
+    border: 1px solid var(--line); background: none; color: var(--sub);
+    border-radius: 99px; padding: 6px 14px; font-size: 0.7rem; cursor: pointer; font-family: inherit;
+  }
+  .cat-del:active { background: var(--bg); }
+  .cat-lock { font-size: 0.64rem; color: var(--faint); letter-spacing: 0.12em; }
+  /* ===== 夢リスト ===== */
+  .dream-count { text-align: center; padding: 2px 0 14px; }
+  .dream-count .dc-num { font-size: 2.4rem; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .dream-count .dc-unit { font-size: 0.8rem; color: var(--sub); font-weight: 500; }
+  .dream-count .dc-done { display: block; font-size: 0.68rem; color: var(--faint); letter-spacing: 0.12em; margin-top: 2px; }
+  /* 横スライド共通（夢リスト・ルールタブ） */
+  .swipe-pager { display: flex; gap: 8px; margin-top: 16px; }
+  .swipe-pager button {
+    flex: 1; padding: 9px 0; border-radius: 99px; border: 1px solid var(--line);
+    background: none; color: var(--sub); font-size: 0.74rem; letter-spacing: 0.08em;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .swipe-pager button.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .swipe-panes {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; margin-top: 6px;
+    scrollbar-width: none;
+  }
+  .swipe-panes::-webkit-scrollbar { display: none; }
+  .swipe-pane { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+  .rule-pager { margin: 4px 0 8px; }
+  .rule-pager button { padding: 9px 2px; }
+  .swipe-pane .card:last-child { margin-bottom: 4px; }
+  .dream-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .dream-row:last-child { border-bottom: none; }
+  .dream-check {
+    width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--faint);
+    background: none; cursor: pointer; flex-shrink: 0; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: transparent; font-size: 0.7rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .dream-row.done .dream-check { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .dream-text { flex: 1; font-size: 0.86rem; line-height: 1.6; word-break: break-word; min-width: 0; }
+  .dream-row.done .dream-text { color: var(--faint); text-decoration: line-through; }
+  .dream-pri {
+    border: 1px solid var(--line); background: none; color: var(--faint);
+    border-radius: 99px; padding: 5px 12px; font-size: 0.7rem; letter-spacing: 0.1em;
+    cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .dream-pri.p2 { border-color: var(--sub); color: var(--ink); }
+  .dream-pri.p3 { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .dream-row.done .dream-pri { opacity: 0.35; }
+  .dream-del {
+    border: none; background: none; color: var(--faint); cursor: pointer;
+    font-size: 1.05rem; line-height: 1; padding: 4px 2px; flex-shrink: 0; font-family: inherit;
+  }
+  .privacy { font-size: 0.72rem; color: var(--sub); line-height: 2.1; }
+  .danger-btn {
+    width: 100%; margin-top: 14px; background: none; border: 1px solid var(--line); color: var(--sub);
+    border-radius: 99px; padding: 11px; font-size: 0.76rem; letter-spacing: 0.1em; cursor: pointer; font-family: inherit;
+  }
+
+  /* ===== 集中すること ===== */
+  .focus-line {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 16px; margin-bottom: 14px;
+    font-size: 0.84rem; font-weight: 600; text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .focus-line .fl-label {
+    display: inline-block; font-size: 0.6rem; font-weight: 600; color: var(--faint);
+    letter-spacing: 0.24em; margin-right: 10px; vertical-align: 1px;
+  }
+  .focus-line small { display: block; font-size: 0.64rem; font-weight: 400; color: var(--sub); letter-spacing: 0.08em; }
+  .focus-input {
+    width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 12px; font-size: 0.84rem; background: var(--card); color: var(--ink); font-family: inherit;
+  }
+  .focus-input::placeholder { color: var(--faint); }
+  .focus-input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
+
+  /* ===== 初回オンボーディング ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(22, 22, 22, 0.55);
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; overflow-y: auto;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card {
+    background: var(--card); border-radius: 22px; padding: 26px 22px;
+    width: 100%; max-width: 340px; margin: auto;
+    box-shadow: 0 24px 60px rgba(22,22,22,0.25);
+    animation: rise 0.3s ease both;
+  }
+  .modal-card[hidden] { display: none; }
+  .ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .ob-logo {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--ink); color: #fff;
+    width: 44px; height: 44px; border-radius: 12px;
+    font-size: 0.9rem; font-weight: 800; letter-spacing: 0.04em;
+  }
+  .ob-dots { display: flex; gap: 7px; }
+  .ob-dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1px solid var(--faint); background: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .ob-dots span.on { background: var(--ink); border-color: var(--ink); }
+  .ob-viewport { overflow: hidden; transition: height 0.3s ease; }
+  .ob-steps { display: flex; align-items: flex-start; transition: transform 0.3s ease; }
+  .ob-step { flex: 0 0 100%; min-width: 0; }
+  .ob-title { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .ob-note { font-size: 0.74rem; color: var(--sub); margin-bottom: 12px; line-height: 1.9; }
+  .ob-label { font-size: 0.82rem; font-weight: 600; margin: 16px 0 8px; line-height: 1.7; }
+  .ob-label b { border-bottom: 2px solid var(--ink); }
+  .ob-label small { display: block; font-size: 0.68rem; font-weight: 400; color: var(--sub); }
+  .modal-card input {
+    width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 12px; font-size: 16px; background: var(--card); color: var(--ink); font-family: inherit;
+    margin-bottom: 8px;
+  }
+  .modal-card input::placeholder { color: var(--faint); }
+  .modal-card input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
+  .ob-primary {
+    width: 100%; margin-top: 14px; border: none; background: var(--ink); color: #fff;
+    border-radius: 99px; padding: 13px; font-size: 0.86rem; letter-spacing: 0.12em;
+    cursor: pointer; font-family: inherit;
+    transition: transform 0.12s ease;
+  }
+  .ob-primary:active { transform: scale(0.97); }
+  .ob-skip {
+    width: 100%; margin-top: 8px; border: none; background: none; color: var(--sub);
+    padding: 10px; font-size: 0.74rem; letter-spacing: 0.1em; cursor: pointer; font-family: inherit;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  #ob-cta { margin-top: 4px; }
+
+  /* ===== LAUNCHロゴ ===== */
+  .launch-logo {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-weight: 800; letter-spacing: 0.34em; color: var(--ink);
+    font-family: Helvetica, Arial, sans-serif;
+  }
+  .launch-logo svg { width: 0.95em; height: 1.25em; flex-shrink: 0; }
+  footer.credit {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 2px 0 14px; color: var(--faint);
+    font-size: 0.58rem; letter-spacing: 0.26em;
+  }
+  footer.credit .launch-logo { font-size: 0.72rem; color: var(--sub); }
+  .brand-block { text-align: center; padding: 6px 0 2px; }
+  .brand-block .launch-logo { font-size: 1.05rem; justify-content: center; display: flex; }
+  .brand-block p { font-size: 0.7rem; color: var(--sub); margin-top: 8px; line-height: 1.9; }
+  .ob-brand {
+    text-align: center; margin-top: 16px; color: var(--faint);
+    font-size: 0.56rem; letter-spacing: 0.26em;
+  }
+  .ob-brand .launch-logo { font-size: 0.68rem; color: var(--sub); margin-left: 6px; vertical-align: -1px; }
+
+  /* ===== 下部ナビ ===== */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    max-width: 480px; margin: 0 auto;
+    background: rgba(255,255,255,0.92);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button {
+    flex: 1; background: none; border: none; padding: 10px 0 8px;
+    font-size: 0.62rem; letter-spacing: 0.14em; color: var(--faint); cursor: pointer; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    transition: color 0.15s ease;
+  }
+  nav button svg { width: 21px; height: 21px; }
+  nav button.active { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- LAUNCHロゴ（探偵シルエット）共通定義 -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="launch-mark" viewBox="0 0 72 96">
+    <!-- フェドーラ帽（クラウン＋ブリムを一体で） -->
+    <path fill="currentColor" d="M9 31 Q13 24 22 21 L24 13 Q25 9 33 8 L45 9 Q50 11 51 17 Q60 19 63 24 Q64 28 59 28 Q36 20 16 34 Q10 35 9 31 Z"/>
+    <!-- コート（立てた襟＋身頃、裾は左に流す） -->
+    <path fill="currentColor" d="M20 44 Q22 37 30 32 L34 43 Q38 34 44 30 Q52 33 55 42 Q60 62 57 91 L14 93 Q10 68 15 52 Q16 47 20 44 Z"/>
+    <!-- 腕の折り目（背景色のストローク） -->
+    <path fill="none" stroke="var(--bg, #f4f3f0)" stroke-width="2.5" stroke-linecap="round" d="M15 56 Q28 58 35 66 Q39 71 37 77"/>
+    <!-- 奥行きのエコーライン -->
+    <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.3" d="M61 36 Q66 62 62 90"/>
+  </symbol>
+</svg>
+
+<header>
+  <a class="launch-brand" href="https://www.youtube.com/@launch-jp" target="_blank" rel="noopener" aria-label="YouTubeチャンネル LAUNCH を開く">
+    <svg class="lb-mark"><use href="#launch-mark"/></svg>
+    <span class="lb-text">LAUNCH</span>
+  </a>
+</header>
+
+<main>
+
+  <!-- ============ 記録 ============ -->
+  <section class="view active" id="view-record">
+    <div class="alert" id="rule-alert"></div>
+    <div class="focus-line" id="focus-line" hidden></div>
+
+    <div class="datenav">
+      <button id="date-prev" aria-label="前の日"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg></button>
+      <div class="datelabel" id="date-label"></div>
+      <button id="date-next" aria-label="次の日"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+    </div>
+
+    <div class="card">
+      <h2>今日の24時間</h2>
+      <div id="input-rows"></div>
+      <div class="sum-wrap">
+        <div class="sum-bar">
+          <div>
+            <div class="sum-label">合計</div>
+            <span class="sum-num" id="sum-num">0</span>
+            <span class="sum-unit">/ 24時間</span>
+          </div>
+          <button class="fill-btn" id="fill-btn">残りを「その他」へ</button>
+        </div>
+        <div class="sum-track"><div class="sum-fill" id="sum-fill"></div></div>
+      </div>
+      <p class="saved-note">入力は自動で保存されます — この端末の中だけ</p>
+    </div>
+  </section>
+
+  <!-- ============ 1日（グラフ） ============ -->
+  <section class="view" id="view-day">
+    <div class="datenav">
+      <button id="gdate-prev" aria-label="前の日"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg></button>
+      <div class="datelabel" id="gdate-label"></div>
+      <button id="gdate-next" aria-label="次の日"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+    </div>
+    <div class="card">
+      <h2>1日の内訳</h2>
+      <div id="day-chart"></div>
+    </div>
+  </section>
+
+  <!-- ============ 週 ============ -->
+  <section class="view" id="view-week">
+    <div class="card">
+      <h2>あなたの自由時間</h2>
+      <div id="free-hours-box"></div>
+    </div>
+    <div class="card">
+      <h2>今週の記録（月 – 日）</h2>
+      <div id="week-bars"></div>
+    </div>
+    <div class="card">
+      <h2>週間レポート</h2>
+      <div id="week-report"></div>
+    </div>
+  </section>
+
+  <!-- ============ 100の夢リスト ============ -->
+  <section class="view" id="view-dreams">
+    <div class="card">
+      <h2>100の夢リスト</h2>
+      <p class="rule-desc">「時間が空いたら、何をやる？」を先に書き出しておくリスト。大きな夢も、小さな楽しみも、思いついたらその場で追加。優先度（高・中・低）をタップで切り替えると、自動で並び替わります。終わったらチェック — 右にスワイプすると「叶えた夢」が見られます。</p>
+      <p class="rule-desc">このタブを開いたまま「ホーム画面に追加」すると、空いた瞬間にワンタップでこのリストが開きます。</p>
+      <div class="dream-count" id="dream-count"></div>
+      <div class="cat-add">
+        <input type="text" id="new-dream-text" maxlength="50" placeholder="やりたいことを書く" aria-label="やりたいこと">
+        <button type="button" id="add-dream-btn">追加</button>
+      </div>
+      <div class="swipe-pager" id="dream-pager">
+        <button type="button" data-pane="0" class="active" id="pager-active">やりたいこと</button>
+        <button type="button" data-pane="1" id="pager-done">叶えた夢</button>
+      </div>
+      <div class="swipe-panes" id="dream-panes">
+        <div class="swipe-pane" id="dream-rows"></div>
+        <div class="swipe-pane" id="dream-done-rows"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ルール（横スライド4ペイン） ============ -->
+  <section class="view" id="view-rules">
+    <div class="swipe-pager rule-pager" id="rule-pager">
+      <button type="button" data-pane="0" class="active">集中</button>
+      <button type="button" data-pane="1">カテゴリ</button>
+      <button type="button" data-pane="2">上限</button>
+      <button type="button" data-pane="3">データ</button>
+    </div>
+    <div class="swipe-panes" id="rule-panes">
+      <div class="swipe-pane">
+        <div class="card">
+          <h2>集中すること — 1つだけ</h2>
+          <p class="rule-desc">これと決めた1つに時間を注ぎ、それ以外は手を抜く。記録画面の上にいつも表示されます。</p>
+          <input type="text" id="focus-input" class="focus-input" maxlength="20" placeholder="例：副業の動画編集" aria-label="集中すること">
+        </div>
+      </div>
+      <div class="swipe-pane">
+        <div class="card">
+          <h2>カテゴリの編集</h2>
+          <p class="rule-desc">時間の使い方は人それぞれ。自分に合った項目に変えられます（睡眠・仕事・その他は計算に使うため固定です）。</p>
+          <div id="cat-rows"></div>
+          <div class="cat-add">
+            <input type="text" id="new-cat-name" maxlength="10" placeholder="新しいカテゴリ名（10文字まで）" aria-label="新しいカテゴリ名">
+            <button type="button" id="add-cat-btn">追加</button>
+          </div>
+        </div>
+      </div>
+      <div class="swipe-pane">
+        <div class="card">
+          <h2>マイルール — 1日の上限</h2>
+          <p class="rule-desc">カテゴリごとに「1日ここまで」を決められます。超えた日は、翌日の記録画面でそっとお知らせします。</p>
+          <div id="rule-rows"></div>
+        </div>
+      </div>
+      <div class="swipe-pane">
+        <div class="card">
+          <h2>データについて</h2>
+          <p class="privacy">
+            記録はすべてこの端末（ブラウザ）の中にだけ保存されます。アカウント登録は不要で、外部への送信も一切ありません。<br>
+            ブラウザのデータを消去すると記録も消えます。
+          </p>
+          <button class="danger-btn" id="reset-btn">すべての記録を削除する</button>
+        </div>
+        <div class="card">
+          <h2>このアプリについて</h2>
+          <div class="brand-block">
+            <span class="launch-logo" aria-label="LAUNCH"><svg><use href="#launch-mark"/></svg>LAUNCH</span>
+            <p>「168」は、YouTubeチャンネル「LAUNCH」が<br>視聴者のために無料配布しているアプリです。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="credit">
+    PRESENTED BY
+    <span class="launch-logo" aria-label="LAUNCH"><svg><use href="#launch-mark"/></svg>LAUNCH</span>
+  </footer>
+
+</main>
+
+<!-- ============ 初回オンボーディング（横スライド3ステップ・縦スクロールなし） ============ -->
+<div class="modal-overlay" id="onboard" hidden>
+  <div class="modal-card ob-card">
+    <div class="ob-head">
+      <span class="ob-logo">168</span>
+      <div class="ob-dots" id="ob-dots"><span class="on"></span><span></span><span></span></div>
+    </div>
+    <div class="ob-viewport" id="ob-viewport">
+      <div class="ob-steps" id="ob-steps">
+        <div class="ob-step">
+          <p class="ob-title">はじめる前に、2つだけ。</p>
+          <p class="ob-label">① 集中すること<b>1つ</b>を決める<small>それ以外は、手を抜いてOK</small></p>
+          <input type="text" id="ob-focus" maxlength="20" placeholder="例：副業の動画編集" aria-label="集中すること">
+          <button type="button" class="ob-primary" id="ob-next1">次へ →</button>
+          <button type="button" class="ob-skip" id="ob-skip">あとで設定する</button>
+          <p class="ob-brand">FROM<span class="launch-logo"><svg><use href="#launch-mark"/></svg>LAUNCH</span></p>
+        </div>
+        <div class="ob-step">
+          <p class="ob-title">つづいて、これだけ。</p>
+          <p class="ob-label">② やりたいことを<b>3つ</b>書く<small>あとで「100の夢リスト」に育てます</small></p>
+          <input type="text" class="ob-dream" maxlength="50" placeholder="1つ目" aria-label="やりたいこと1">
+          <input type="text" class="ob-dream" maxlength="50" placeholder="2つ目" aria-label="やりたいこと2">
+          <input type="text" class="ob-dream" maxlength="50" placeholder="3つ目" aria-label="やりたいこと3">
+          <button type="button" class="ob-primary" id="ob-create">宣言をつくる</button>
+          <button type="button" class="ob-skip" id="ob-back">← 戻る</button>
+        </div>
+        <div class="ob-step">
+          <p class="ob-title">あなたの宣言ができました。</p>
+          <p class="ob-note">動画のコメント欄に貼ると、宣言が記録に残ります。</p>
+          <pre class="cta-box" id="ob-cta"></pre>
+          <button type="button" class="ob-primary" id="ob-copy">コメント用にコピー</button>
+          <button type="button" class="ob-skip" id="ob-start">アプリをはじめる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <button data-view="record" class="active" aria-label="記録">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4.2-1 10.6-10.6a2.1 2.1 0 0 0-3.2-3.2L5 15.8 4 20z"/></svg>
+    記録
+  </button>
+  <button data-view="day" aria-label="1日">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12l6 6"/></svg>
+    1日
+  </button>
+  <button data-view="week" aria-label="週168">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-8"/></svg>
+    週168
+  </button>
+  <button data-view="dreams" aria-label="夢リスト">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.9L12 3.5z"/></svg>
+    夢リスト
+  </button>
+  <button data-view="rules" aria-label="ルール">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/></svg>
+    ルール
+  </button>
+</nav>
+
+<script>
+"use strict";
+
+/* ============ 定義 ============ */
+// protected: 睡眠・仕事は自由時間の計算に、その他は「残りを自動入力」に必要なため削除不可
+// 「移動」(id:commute) は自由時間の計算で仕事側に合算される
+const DEFAULT_CATS = [
+  { id: "work",    name: "仕事",   color: "#3d3c39", protected: true },
+  { id: "commute", name: "移動",   color: "#93918c" },
+  { id: "sns",     name: "スマホ", color: "#6e6c68",
+    hint: "実測は 設定 › スクリーンタイム で確認" },
+  { id: "sleep",   name: "睡眠",   color: "#cbc9c4", protected: true },
+  { id: "other",   name: "その他", color: "#e4e2dd", protected: true },
+];
+const COLOR_POOL = [
+  "#57544f", "#a19e97", "#7f7d78", "#c1beb8", "#4a4844",
+  "#8b8880", "#d5d3ce", "#65625d", "#b8b5ae", "#33312e",
+];
+const MAX_CATS = 12;
+const STEP = 0.5;
+const LS_DAYS = "app168.days";
+const LS_RULES = "app168.rules";
+const LS_CATS = "app168.cats";
+const LS_DREAMS = "app168.dreams";
+const LS_FOCUS = "app168.focus";
+const LS_ONBOARD = "app168.onboarded";
+const MAX_DREAMS = 100;
+
+/* ============ ユーティリティ ============ */
+const $ = (sel) => document.querySelector(sel);
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+
+function ymd(d) {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+function parseYmd(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function addDays(s, n) {
+  const d = parseYmd(s);
+  d.setDate(d.getDate() + n);
+  return ymd(d);
+}
+function todayStr() { return ymd(new Date()); }
+function fmtH(h) {
+  return (Math.round(h * 10) / 10).toLocaleString("ja-JP", { maximumFractionDigits: 1 });
+}
+function dateLabelHtml(s, isToday) {
+  const d = parseYmd(s);
+  return `<span class="d-main">${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）</span>
+          <span class="d-sub">${isToday ? "TODAY" : d.getFullYear()}</span>`;
+}
+function dateLabel(s) {
+  const d = parseYmd(s);
+  return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+}
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/* ============ 保存・読込 ============ */
+function loadDays() {
+  try { return JSON.parse(localStorage.getItem(LS_DAYS)) || {}; } catch { return {}; }
+}
+function saveDays(days) { localStorage.setItem(LS_DAYS, JSON.stringify(days)); }
+function loadRules() {
+  try { return JSON.parse(localStorage.getItem(LS_RULES)) || {}; } catch { return {}; }
+}
+function saveRules(rules) { localStorage.setItem(LS_RULES, JSON.stringify(rules)); }
+function loadCats() {
+  try {
+    const c = JSON.parse(localStorage.getItem(LS_CATS));
+    if (Array.isArray(c) && c.length) return c;
+  } catch {}
+  return JSON.parse(JSON.stringify(DEFAULT_CATS));
+}
+function saveCats() { localStorage.setItem(LS_CATS, JSON.stringify(CATS)); }
+function loadDreams() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_DREAMS));
+    if (Array.isArray(d)) return d;
+  } catch {}
+  return [];
+}
+function saveDreams() { localStorage.setItem(LS_DREAMS, JSON.stringify(dreams)); }
+
+let days = loadDays();
+let rules = loadRules();
+let CATS = loadCats();
+let dreams = loadDreams();
+let editDate = todayStr();   // 記録タブで編集中の日付
+let graphDate = todayStr();  // 1日タブで表示中の日付
+
+function getDay(dateStr) {
+  const rec = days[dateStr] || {};
+  const out = {};
+  CATS.forEach(c => { out[c.id] = Number(rec[c.id]) || 0; });
+  return out;
+}
+function hasRecord(dateStr) {
+  const rec = days[dateStr];
+  return !!rec && CATS.some(c => Number(rec[c.id]) > 0);
+}
+function dayTotal(rec) {
+  return CATS.reduce((s, c) => s + (Number(rec[c.id]) || 0), 0);
+}
+
+/* ============ 記録タブ ============ */
+function buildInputRows() {
+  const wrap = $("#input-rows");
+  wrap.innerHTML = "";
+  CATS.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "cat-row";
+    row.innerHTML = `
+      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="cat-name">${esc(c.name)}${c.hint ? `<small>${c.hint}</small>` : ""}</span>
+      <span class="stepper">
+        <button type="button" data-cat="${c.id}" data-d="-1" aria-label="${esc(c.name)}を減らす">−</button>
+        <input type="text" inputmode="decimal" data-cat="${c.id}" aria-label="${esc(c.name)}の時間">
+        <button type="button" data-cat="${c.id}" data-d="1" aria-label="${esc(c.name)}を増やす">＋</button>
+      </span>`;
+    wrap.appendChild(row);
+  });
+}
+
+{
+  const wrap = $("#input-rows");
+  wrap.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-cat]");
+    if (!btn) return;
+    const rec = getDay(editDate);
+    const id = btn.dataset.cat;
+    let v = rec[id] + STEP * Number(btn.dataset.d);
+    v = Math.max(0, Math.min(24, Math.round(v * 10) / 10));
+    rec[id] = v;
+    days[editDate] = rec;
+    saveDays(days);
+    renderRecord();
+  });
+
+  wrap.addEventListener("change", (e) => {
+    const input = e.target.closest("input[data-cat]");
+    if (!input) return;
+    const rec = getDay(editDate);
+    let v = parseFloat(String(input.value).replace(/[０-９．]/g, ch => "０１２３４５６７８９．".indexOf(ch) < 10 ? "０１２３４５６７８９".indexOf(ch) : "."));
+    if (!isFinite(v)) v = 0;
+    v = Math.max(0, Math.min(24, Math.round(v * 10) / 10));
+    rec[input.dataset.cat] = v;
+    days[editDate] = rec;
+    saveDays(days);
+    renderRecord();
+  });
+}
+
+function renderRecord() {
+  // 日付ラベル
+  const isToday = editDate === todayStr();
+  $("#date-label").innerHTML = dateLabelHtml(editDate, isToday);
+  $("#date-next").disabled = isToday;
+
+  // 入力値
+  const rec = getDay(editDate);
+  document.querySelectorAll("#input-rows input[data-cat]").forEach(input => {
+    if (document.activeElement !== input) input.value = fmtH(rec[input.dataset.cat]);
+  });
+
+  // 合計
+  const total = dayTotal(rec);
+  const sumEl = $("#sum-num");
+  sumEl.textContent = fmtH(total);
+  sumEl.classList.toggle("over", total > 24);
+  $("#sum-fill").style.width = Math.min(100, (total / 24) * 100) + "%";
+  $("#fill-btn").disabled = total >= 24 || total === 0;
+
+  renderAlert();
+  renderFocusLine();
+}
+
+// 集中すること（記録画面の上に常時表示）
+function renderFocusLine() {
+  const fl = $("#focus-line");
+  const focusV = localStorage.getItem(LS_FOCUS);
+  if (focusV) {
+    fl.innerHTML = `<span class="fl-label">FOCUS</span>${esc(focusV)}<small>それ以外は、手を抜いてOK</small>`;
+    fl.hidden = false;
+  } else {
+    fl.hidden = true;
+  }
+}
+
+// 「残りをその他へ」
+$("#fill-btn").addEventListener("click", () => {
+  const rec = getDay(editDate);
+  const total = dayTotal(rec);
+  if (total >= 24 || total === 0) return;
+  rec.other = Math.round((rec.other + (24 - total)) * 10) / 10;
+  days[editDate] = rec;
+  saveDays(days);
+  renderRecord();
+});
+
+// 昨日のルール超過アラート（今日を表示しているときのみ）
+function renderAlert() {
+  const box = $("#rule-alert");
+  box.classList.remove("show");
+  if (editDate !== todayStr()) return;
+  const y = addDays(todayStr(), -1);
+  if (!hasRecord(y)) return;
+  const rec = getDay(y);
+  const overs = CATS
+    .filter(c => rules[c.id] > 0 && rec[c.id] > rules[c.id])
+    .map(c => `<strong>${esc(c.name)}</strong> が上限を ${fmtH(rec[c.id] - rules[c.id])}時間 オーバー（${fmtH(rec[c.id])} / ${fmtH(rules[c.id])}時間）`);
+  if (overs.length === 0) return;
+  box.innerHTML = `<div class="alert-title">昨日のふりかえり</div>` + overs.join("<br>");
+  box.classList.add("show");
+}
+
+$("#date-prev").addEventListener("click", () => { editDate = addDays(editDate, -1); renderRecord(); });
+$("#date-next").addEventListener("click", () => {
+  if (editDate < todayStr()) { editDate = addDays(editDate, 1); renderRecord(); }
+});
+
+/* ============ 1日タブ（円グラフ） ============ */
+function donutSvg(rec) {
+  const total = dayTotal(rec);
+  const entries = CATS.map(c => ({ ...c, v: rec[c.id] })).filter(e => e.v > 0);
+  const R = 70, CX = 90, CY = 90, SW = 26;
+  const circ = 2 * Math.PI * R;
+  const gap = entries.length > 1 ? 2.5 : 0;
+  let offset = 0;
+  let segs = "";
+  entries.forEach(e => {
+    const frac = e.v / total;
+    const len = frac * circ;
+    segs += `<circle r="${R}" cx="${CX}" cy="${CY}" fill="none"
+      stroke="${e.color}" stroke-width="${SW}"
+      stroke-dasharray="${Math.max(0.1, len - gap)} ${circ - len + gap}"
+      stroke-dashoffset="${-offset}"
+      transform="rotate(-90 ${CX} ${CY})"/>`;
+    offset += len;
+  });
+  return `<svg width="190" height="190" viewBox="0 0 180 180" role="img" aria-label="1日の時間の内訳">
+    ${segs}
+    <text x="${CX}" y="${CY - 2}" text-anchor="middle" font-size="30" font-weight="250" fill="#161616">${fmtH(total)}</text>
+    <text x="${CX}" y="${CY + 18}" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#8b8880">時間 記録済み</text>
+  </svg>`;
+}
+
+function renderDay() {
+  const isToday = graphDate === todayStr();
+  $("#gdate-label").innerHTML = dateLabelHtml(graphDate, isToday);
+  $("#gdate-next").disabled = isToday;
+
+  const box = $("#day-chart");
+  if (!hasRecord(graphDate)) {
+    box.innerHTML = `<p class="empty-note">この日の記録はまだありません。<br>「記録」タブから1分で入力できます。</p>`;
+    return;
+  }
+  const rec = getDay(graphDate);
+  const total = dayTotal(rec);
+  let legend = "";
+  CATS.forEach(c => {
+    if (rec[c.id] <= 0) return;
+    const pct = Math.round((rec[c.id] / total) * 100);
+    const overRule = rules[c.id] > 0 && rec[c.id] > rules[c.id];
+    legend += `<div class="legend-row">
+      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="lg-name">${esc(c.name)}${overRule ? " ⚑" : ""}</span>
+      <span class="lg-val">${fmtH(rec[c.id])}時間</span>
+      <span class="lg-pct">${pct}%</span>
+    </div>`;
+  });
+  const overNote = CATS.some(c => rules[c.id] > 0 && rec[c.id] > rules[c.id])
+    ? `<p class="flag-note">⚑ … マイルールの上限を超えた項目</p>` : "";
+  box.innerHTML = `<div class="donut-wrap">${donutSvg(rec)}</div><div class="legend">${legend}</div>${overNote}`;
+}
+
+$("#gdate-prev").addEventListener("click", () => { graphDate = addDays(graphDate, -1); renderDay(); });
+$("#gdate-next").addEventListener("click", () => {
+  if (graphDate < todayStr()) { graphDate = addDays(graphDate, 1); renderDay(); }
+});
+
+/* ============ 週タブ ============ */
+function weekDates(baseStr) {
+  // 月曜始まりの週
+  const d = parseYmd(baseStr);
+  const dow = (d.getDay() + 6) % 7; // 月=0
+  const mon = addDays(baseStr, -dow);
+  return Array.from({ length: 7 }, (_, i) => addDays(mon, i));
+}
+
+function renderWeek() {
+  const dates = weekDates(todayStr());
+  const recorded = dates.filter(hasRecord);
+
+  /* --- 自由時間 --- */
+  const freeBox = $("#free-hours-box");
+  if (recorded.length === 0) {
+    freeBox.innerHTML = `<p class="empty-note">記録がたまると、<br>「仕事と睡眠を引いて週何時間残るか」が<br>ここに表示されます。</p>`;
+  } else {
+    let work = 0, sleep = 0;
+    recorded.forEach(ds => { const r = getDay(ds); work += (r.work || 0) + (r.commute || 0); sleep += r.sleep || 0; });
+    const n = recorded.length;
+    const weeklyWork = (work / n) * 7, weeklySleep = (sleep / n) * 7;
+    const free = Math.max(0, 168 - weeklyWork - weeklySleep);
+    freeBox.innerHTML = `
+      <div class="free-hours">
+        <div class="fh-label">WEEKLY FREE HOURS</div>
+        <div class="big">${fmtH(free)}<small>時間/週</small></div>
+        <p>仕事（移動含む・週${fmtH(weeklyWork)}h）と睡眠（週${fmtH(weeklySleep)}h）を引いても、<br>これだけの時間が残っています${n < 7 ? `（${n}日分の記録から換算）` : ""}。</p>
+      </div>`;
+  }
+
+  /* --- 週バー --- */
+  const barBox = $("#week-bars");
+  const MAXH = 24;
+  let bars = "";
+  dates.forEach(ds => {
+    const rec = getDay(ds);
+    const total = dayTotal(rec);
+    let segs = "";
+    CATS.forEach(c => {
+      if (rec[c.id] <= 0) return;
+      segs += `<div class="seg" style="height:${(rec[c.id] / MAXH) * 128}px;background:${c.color}"></div>`;
+    });
+    bars += `<div class="weekbar">
+      <div class="bar-stack" style="height:${(total / MAXH) * 128}px">${segs}</div>
+    </div>`;
+  });
+  let labels = dates.map(ds => {
+    const d = parseYmd(ds);
+    return `<div class="weekbar-label ${ds === todayStr() ? "today" : ""}">${WD[d.getDay()]}</div>`;
+  }).join("");
+  barBox.innerHTML = recorded.length === 0
+    ? `<p class="empty-note">今週の記録はまだありません。</p>`
+    : `<div class="weekbars weekbar-track">${bars}</div><div class="weekbar-labels">${labels}</div>`;
+
+  /* --- 週間レポート --- */
+  renderWeekReport();
+}
+
+function renderWeekReport() {
+  const box = $("#week-report");
+  // 直近7日間（今日を含む）
+  const last7 = Array.from({ length: 7 }, (_, i) => addDays(todayStr(), -(6 - i)));
+  const recorded = last7.filter(hasRecord);
+
+  if (recorded.length < 7) {
+    const dots = last7.map(ds => `<span class="${hasRecord(ds) ? "done" : ""}"></span>`).join("");
+    box.innerHTML = `
+      <p class="report-lock">7日分の記録がたまると、<br>「今週のあなたの168時間」レポートが開きます。<br>あと ${7 - recorded.length} 日。</p>
+      <div class="progress-dots">${dots}</div>`;
+    return;
+  }
+
+  // 集計
+  const sum = {};
+  CATS.forEach(c => sum[c.id] = 0);
+  last7.forEach(ds => { const r = getDay(ds); CATS.forEach(c => sum[c.id] += r[c.id]); });
+  const totalRec = CATS.reduce((s, c) => s + sum[c.id], 0);
+  const free = Math.max(0, 168 - (sum.work || 0) - (sum.commute || 0) - (sum.sleep || 0));
+
+  let rows = "";
+  CATS.forEach(c => {
+    rows += `<tr>
+      <td><span class="cat-dot" style="background:${c.color};display:inline-block;vertical-align:-1px;margin-right:8px"></span>${esc(c.name)}</td>
+      <td class="num">${fmtH(sum[c.id])}時間</td>
+    </tr>`;
+  });
+
+  // メッセージ（落ち着いたトーン）
+  const msgs = [];
+  if (sum.sns > 0) msgs.push(`スマホは7日間で ${fmtH(sum.sns)}時間（1日平均 ${fmtH(sum.sns / 7)}時間）でした。`);
+  msgs.push(`仕事と睡眠を引いても、あなたには週 ${fmtH(free)}時間 が残っています。この一部をどこに向けるかは、あなたが決められます。`);
+
+  // コメント宣言用サマリー（一番大きかった浪費時間＝睡眠・仕事・移動・その他を除く最大カテゴリ）
+  const waste = CATS
+    .filter(c => !["sleep", "work", "commute", "other"].includes(c.id))
+    .map(c => ({ name: c.name, v: sum[c.id] || 0 }))
+    .sort((a, b) => b.v - a.v)[0];
+  const topDream = dreams
+    .filter(d => !d.done)
+    .sort((a, b) => (b.p - a.p) || (a.t - b.t))[0];
+  const ctaLines = ["【私の168時間】"];
+  if (waste && waste.v > 0) ctaLines.push(`一番大きかった浪費時間：${waste.name} 週${fmtH(waste.v)}時間`);
+  ctaLines.push(`見つかった自由時間：週${fmtH(free)}時間`);
+  ctaLines.push(`この時間で「${topDream ? topDream.text : "＿＿"}」を始めます！`);
+
+  box.innerHTML = `
+    <p class="report-title">今週のあなたの168時間</p>
+    <p class="report-range">${dateLabel(last7[0])} 〜 ${dateLabel(last7[6])} ・ 記録合計 ${fmtH(totalRec)}時間</p>
+    <table class="week-table">${rows}</table>
+    <p class="report-msg">${msgs.join("<br>")}</p>
+    <div class="cta-wrap">
+      <p class="cta-title">コメント欄で宣言する</p>
+      <pre class="cta-box" id="cta-text">${esc(ctaLines.join("\n"))}</pre>
+      <button type="button" class="copy-btn" id="copy-cta">コメント用にコピー</button>
+    </div>`;
+}
+
+$("#week-report").addEventListener("click", async (e) => {
+  const btn = e.target.closest("#copy-cta");
+  if (!btn) return;
+  const text = $("#cta-text").textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  btn.textContent = "コピーしました ✓";
+  setTimeout(() => { btn.textContent = "コメント用にコピー"; }, 2000);
+});
+
+/* ============ 100の夢リスト ============ */
+const PRI_LABEL = { 3: "高", 2: "中", 1: "低" };
+const PRI_NEXT = { 2: 3, 3: 1, 1: 2 }; // 中 → 高 → 低 → 中
+
+function renderDreams() {
+  const doneCount = dreams.filter(d => d.done).length;
+  const total = dreams.length;
+  // 目標は100個。ただし最初のマイルストーンは10個
+  let sub;
+  if (total === 0) sub = "まずは10個から";
+  else if (total < 10) sub = `まずは10個から — あと ${10 - total} 個`;
+  else sub = `最初の10個 達成` + (doneCount > 0 ? ` ・ 叶えた夢 ${doneCount}` : "");
+  const dots = total < 10
+    ? `<div class="progress-dots">${Array.from({ length: 10 }, (_, i) => `<span class="${i < total ? "done" : ""}"></span>`).join("")}</div>`
+    : "";
+  $("#dream-count").innerHTML = `
+    <span class="dc-num">${total}</span><span class="dc-unit"> / ${MAX_DREAMS}</span>
+    <span class="dc-done">${sub}</span>${dots}`;
+
+  // 2ペイン構成：やりたいこと（左）／叶えた夢（右・チェックで移動）
+  const byPri = (a, b) => (b.p - a.p) || (a.t - b.t);
+  const rowHtml = d => `
+    <div class="dream-row ${d.done ? "done" : ""}" data-id="${d.id}">
+      <button type="button" class="dream-check" aria-label="${d.done ? "未達成に戻す" : "達成にする"}">✓</button>
+      <span class="dream-text">${esc(d.text)}</span>
+      <button type="button" class="dream-pri p${d.p}" aria-label="優先度を変更（現在：${PRI_LABEL[d.p]}）">${PRI_LABEL[d.p]}</button>
+      <button type="button" class="dream-del" aria-label="削除">×</button>
+    </div>`;
+  const active = dreams.filter(d => !d.done).sort(byPri);
+  const done = dreams.filter(d => d.done).sort(byPri);
+  $("#pager-active").textContent = `やりたいこと ${active.length}`;
+  $("#pager-done").textContent = `叶えた夢 ${done.length}`;
+  $("#dream-rows").innerHTML = active.length
+    ? active.map(rowHtml).join("")
+    : `<p class="empty-note">最初のひとつを書いてみましょう。<br>「本を1冊読み切る」くらい小さくてOKです。</p>`;
+  $("#dream-done-rows").innerHTML = done.length
+    ? done.map(rowHtml).join("")
+    : `<p class="empty-note">チェックを付けた夢が、ここに移動します。</p>`;
+}
+
+$("#dream-panes").addEventListener("click", (e) => {
+  const row = e.target.closest(".dream-row");
+  if (!row) return;
+  const dream = dreams.find(d => d.id === row.dataset.id);
+  if (!dream) return;
+  if (e.target.closest(".dream-check")) {
+    dream.done = !dream.done;
+  } else if (e.target.closest(".dream-pri")) {
+    dream.p = PRI_NEXT[dream.p] || 2;
+  } else if (e.target.closest(".dream-del")) {
+    if (!confirm(`「${dream.text}」をリストから削除します。よろしいですか？`)) return;
+    dreams = dreams.filter(d => d.id !== dream.id);
+  } else {
+    return;
+  }
+  saveDreams();
+  renderDreams();
+});
+
+function addDream() {
+  const input = $("#new-dream-text");
+  const text = input.value.trim().slice(0, 50);
+  if (!text) { input.focus(); return; }
+  if (dreams.length >= MAX_DREAMS) {
+    alert(`${MAX_DREAMS}個そろいました！まずはリストの中から始めましょう。`);
+    return;
+  }
+  dreams.push({ id: "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text, p: 2, done: false, t: Date.now() });
+  saveDreams();
+  input.value = "";
+  renderDreams();
+  input.focus();
+}
+$("#add-dream-btn").addEventListener("click", addDream);
+$("#new-dream-text").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); addDream(); }
+});
+
+// ペイン切り替え（タップ）とスワイプの同期 — 夢リスト／ルールタブ共通
+function wireSwipePager(pagerId, panesId) {
+  const pager = $("#" + pagerId);
+  const panes = $("#" + panesId);
+  pager.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-pane]");
+    if (!b) return;
+    // scroll-snap(mandatory)と併用するとsmoothがキャンセルされる環境があるため即時ジャンプ
+    panes.scrollTo({ left: Number(b.dataset.pane) * panes.clientWidth, behavior: "auto" });
+    // scrollイベントが発火しない環境でも表示が同期するよう、ここでも直接更新する
+    pager.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+  });
+  panes.addEventListener("scroll", () => {
+    const idx = Math.round(panes.scrollLeft / panes.clientWidth);
+    pager.querySelectorAll("button").forEach((b, i) => b.classList.toggle("active", i === idx));
+  });
+}
+wireSwipePager("dream-pager", "dream-panes");
+wireSwipePager("rule-pager", "rule-panes");
+
+/* ============ ルールタブ ============ */
+function buildRuleRows() {
+  const wrap = $("#rule-rows");
+  wrap.innerHTML = "";
+  const options = ['<option value="0">設定しない</option>']
+    .concat(Array.from({ length: 24 }, (_, i) => {
+      const v = (i + 1) * 0.5;
+      return `<option value="${v}">${fmtH(v)}時間まで</option>`;
+    })).join("");
+  CATS.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "rule-row";
+    row.innerHTML = `
+      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="cat-name" style="flex:1">${esc(c.name)}</span>
+      <select data-cat="${c.id}" aria-label="${esc(c.name)}の上限">${options}</select>`;
+    wrap.appendChild(row);
+    row.querySelector("select").value = rules[c.id] || 0;
+  });
+}
+
+$("#rule-rows").addEventListener("change", (e) => {
+  const sel = e.target.closest("select[data-cat]");
+  if (!sel) return;
+  const v = Number(sel.value);
+  if (v > 0) rules[sel.dataset.cat] = v; else delete rules[sel.dataset.cat];
+  saveRules(rules);
+  renderRecord();
+});
+
+/* ============ カテゴリの編集 ============ */
+function buildCatRows() {
+  const wrap = $("#cat-rows");
+  wrap.innerHTML = "";
+  CATS.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "cat-row";
+    row.innerHTML = `
+      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="cat-name" style="flex:1">${esc(c.name)}</span>
+      ${c.protected
+        ? `<span class="cat-lock">基本項目</span>`
+        : `<button type="button" class="cat-del" data-cat="${c.id}" aria-label="${esc(c.name)}を削除">削除</button>`}`;
+    wrap.appendChild(row);
+  });
+}
+
+$("#cat-rows").addEventListener("click", (e) => {
+  const btn = e.target.closest(".cat-del");
+  if (!btn) return;
+  const cat = CATS.find(c => c.id === btn.dataset.cat);
+  if (!cat) return;
+  if (!confirm(`「${cat.name}」を削除します。過去の記録もグラフや集計に表示されなくなります。よろしいですか？`)) return;
+  CATS = CATS.filter(c => c.id !== cat.id);
+  delete rules[cat.id];
+  saveRules(rules);
+  saveCats();
+  rebuildAll();
+});
+
+$("#add-cat-btn").addEventListener("click", () => {
+  const input = $("#new-cat-name");
+  const name = input.value.trim().replace(/[<>&"']/g, "").slice(0, 10);
+  if (!name) { input.focus(); return; }
+  if (CATS.some(c => c.name === name)) { alert("同じ名前のカテゴリがすでにあります。"); return; }
+  if (CATS.length >= MAX_CATS) { alert(`カテゴリは${MAX_CATS}個までです。グラフが読みやすい数に保っています。`); return; }
+  const used = new Set(CATS.map(c => c.color));
+  const color = COLOR_POOL.find(col => !used.has(col)) || "#9b9891";
+  // 「その他」の手前（＝一覧の並び順の意図を保った位置）に挿入
+  const otherIdx = CATS.findIndex(c => c.id === "other");
+  const newCat = { id: "c" + Date.now().toString(36), name, color };
+  if (otherIdx >= 0) CATS.splice(otherIdx, 0, newCat); else CATS.push(newCat);
+  saveCats();
+  input.value = "";
+  rebuildAll();
+});
+
+// 集中することの編集（ルールタブ・自動保存）
+$("#focus-input").addEventListener("change", () => {
+  const v = $("#focus-input").value.trim().slice(0, 20);
+  if (v) localStorage.setItem(LS_FOCUS, v); else localStorage.removeItem(LS_FOCUS);
+  renderFocusLine();
+});
+
+/* ============ 初回オンボーディング ============ */
+function newDreamId() {
+  return "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+}
+
+// 横スライドのステップ切り替え（縦スクロールを出さないため、高さは表示中ステップに合わせる）
+function goObStep(i) {
+  const steps = $("#ob-steps");
+  steps.style.transform = `translateX(-${i * 100}%)`;
+  document.querySelectorAll("#ob-dots span").forEach((d, k) => d.classList.toggle("on", k === i));
+  $("#ob-viewport").style.height = steps.children[i].offsetHeight + "px";
+}
+$("#ob-next1").addEventListener("click", () => goObStep(1));
+$("#ob-back").addEventListener("click", () => goObStep(0));
+$("#ob-focus").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); goObStep(1); }
+});
+
+$("#ob-create").addEventListener("click", () => {
+  const focusV = $("#ob-focus").value.trim().slice(0, 20);
+  const wants = [...document.querySelectorAll(".ob-dream")]
+    .map(i => i.value.trim().slice(0, 50)).filter(Boolean).slice(0, 3);
+  if (!focusV && wants.length === 0) { goObStep(0); $("#ob-focus").focus(); return; }
+
+  if (focusV) {
+    localStorage.setItem(LS_FOCUS, focusV);
+    $("#focus-input").value = focusV;
+  }
+  wants.forEach((text, i) => {
+    dreams.push({ id: newDreamId(), text, p: 3, done: false, t: Date.now() + i });
+  });
+  saveDreams();
+  localStorage.setItem(LS_ONBOARD, "1");
+
+  const lines = ["【私の168時間宣言】"];
+  if (focusV) lines.push(`集中すること：${focusV}（それ以外は手を抜く）`);
+  if (wants.length) {
+    lines.push("空いた時間でやりたいこと：");
+    wants.forEach(t => lines.push(`・${t}`));
+  }
+  $("#ob-cta").textContent = lines.join("\n");
+  goObStep(2);
+  renderAll();
+});
+
+$("#ob-copy").addEventListener("click", async () => {
+  const btn = $("#ob-copy");
+  const text = $("#ob-cta").textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  btn.textContent = "コピーしました ✓";
+  setTimeout(() => { btn.textContent = "コメント用にコピー"; }, 2000);
+});
+
+$("#ob-skip").addEventListener("click", () => {
+  localStorage.setItem(LS_ONBOARD, "1");
+  $("#onboard").hidden = true;
+});
+$("#ob-start").addEventListener("click", () => {
+  $("#onboard").hidden = true;
+});
+
+$("#reset-btn").addEventListener("click", () => {
+  if (!confirm("すべての記録・ルール・カテゴリ設定・夢リスト・集中することを削除します。この操作は取り消せません。よろしいですか？")) return;
+  [LS_DAYS, LS_RULES, LS_CATS, LS_DREAMS, LS_FOCUS, LS_ONBOARD].forEach(k => localStorage.removeItem(k));
+  days = {}; rules = {}; CATS = loadCats(); dreams = [];
+  $("#focus-input").value = "";
+  rebuildAll();
+});
+
+/* ============ ナビ ============ */
+function showView(name) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.view === name));
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  $("#view-" + name).classList.add("active");
+  // ホーム画面追加時にこのタブが起動タブとして記憶されるよう、URLに残す
+  history.replaceState(null, "", "#" + name);
+  renderAll();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("nav button").forEach(btn => {
+  btn.addEventListener("click", () => showView(btn.dataset.view));
+});
+
+function renderAll() {
+  renderRecord();
+  renderDay();
+  renderWeek();
+  renderDreams();
+}
+
+function rebuildAll() {
+  buildInputRows();
+  buildRuleRows();
+  buildCatRows();
+  renderAll();
+}
+
+/* ============ 起動 ============ */
+buildInputRows();
+buildRuleRows();
+buildCatRows();
+$("#focus-input").value = localStorage.getItem(LS_FOCUS) || "";
+// #dreams 等のURLハッシュで起動タブを指定できる（ホーム画面からのワンタップ動線）
+const initView = location.hash.replace("#", "");
+showView(["record", "day", "week", "dreams", "rules"].includes(initView) ? initView : "record");
+// 初回だけオンボーディング（①集中すること ②やりたいこと3つ → 宣言コピー）
+if (!localStorage.getItem(LS_ONBOARD)) {
+  $("#onboard").hidden = false;
+  requestAnimationFrame(() => goObStep(0));
+}
+</script>
+</body>
+</html>
